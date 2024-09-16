@@ -1,0 +1,6 @@
+brew "awscli"
+brew "node@22"
+brew "ffmpeg"
+brew "flyctl"
+brew "jq"
+brew "jo"
