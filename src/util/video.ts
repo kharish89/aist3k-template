@@ -311,11 +311,7 @@ export async function toBase64ImageUrl(
   return toBase64;
 }
 
-const prompt = (context: string) => `These are frames from an old movie with one or more pictures. 
-Generate a funny description of the image or a sequence of images. Make your narrative continuous and natural based on what you have said before. Really roast the movie.
-Previously you have described other frames from the same video, here is what you said: ${context}. 
-
-Make your description unique and not repetitive please!. Also, please keep it to only a few sentences.`;
+const prompt = (context: string) => `TODO: implement`;
 
 export async function describeImageForVideo(
   url: string,
