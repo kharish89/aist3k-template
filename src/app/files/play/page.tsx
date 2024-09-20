@@ -8,7 +8,6 @@ import {
 } from "@/app/actions";
 import Button from "@/components/Button";
 import serverDescribeVideo from "@/app/actions/describeVideo";
-import describeFrame from "@/app/actions/describe";
 
 export interface PageParams {
   searchParams: {
