@@ -1,85 +1,89 @@
 "use server";
 
 import { ollama } from "@/util/video";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { Redis } from "@upstash/redis";
+import { s3client, putobjectcommand } from "@aws-sdk/client-s3";
+import { redis } from "@upstash/redis";
 
-const client = new S3Client();
-const redis = Redis.fromEnv();
+const client = new s3client();
+const redis = redis.fromenv();
 
-function isEmpty(val: string | undefined | null) {
+function isempty(val: string | undefined | null) {
   return val === undefined || val == null || val.length <= 0 ? true : false;
 }
 
-function removeQuotesAndNewlines(str: string) {
+function removequotesandnewlines(str: string) {
   return (str + "")
-    .replaceAll('"', "")
-    .replaceAll("'", "")
-    .replaceAll("\n", "");
+    .replaceall('"', "")
+    .replaceall("'", "")
+    .replaceall("\n", "");
 }
 
-export async function listOllamaVisionModels() {
-  return []; // TODO: implement
+export async function listollamavisionmodels() {
+  return ollama.list()
+    .then((list) => list.models)
+    // clip == vision, it's the name of the paper that describes the vision model paradigm we use
+    .then((models) => models.filter(m => m.details.families && m.details.families.includes("clip")))
+    .then((models) => models.map(m => m.name))
 };
 
 
-export async function fetchAndPlayTextToSpeech(
-  narrationText: string,
-  videoName: string
+export async function fetchandplaytexttospeech(
+  narrationtext: string,
+  videoname: string
 ) {
-  console.log("current narration", narrationText);
-  const cachedResult = await redis.get(narrationText);
-  if (cachedResult) {
-    console.log("cached result", cachedResult);
-    return cachedResult;
+  console.log("current narration", narrationtext);
+  const cachedresult = await redis.get(narrationtext);
+  if (cachedresult) {
+    console.log("cached result", cachedresult);
+    return cachedresult;
   }
 
-  if (!isEmpty(process.env.XI_API_KEY)) {
-    // Narrate with 11 labs
+  if (!isempty(process.env.xi_api_key)) {
+    // narrate with 11 labs
 
-    const escapestr = removeQuotesAndNewlines(narrationText);
+    const escapestr = removequotesandnewlines(narrationtext);
     const options = {
-      method: "POST",
+      method: "post",
       headers: {
-        Accept: "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": process.env.XI_API_KEY!,
+        accept: "audio/mpeg",
+        "content-type": "application/json",
+        "xi-api-key": process.env.xi_api_key!,
       },
       body: '{"model_id":"eleven_turbo_v2","text":"' + escapestr + '"}',
     };
 
     try {
       const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${process.env.XI_VOICE_ID!}`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${process.env.xi_voice_id!}`,
         options
       );
       if (response.status !== 200) {
         console.error(
-          "Unable to create elevenlabs audio. Error: " +
-          JSON.stringify(await response.json())
+          "unable to create elevenlabs audio. error: " +
+          json.stringify(await response.json())
         );
         return;
       }
 
       const blob = await response.blob();
-      const ts = new Date().getTime();
-      const audioFileSavedAt = `elevenLabsAudio/${videoName}/${ts}.mp3`;
-      const arrayBuffer = await blob.arrayBuffer();
-      const tigrisParam = {
-        Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!,
-        Key: audioFileSavedAt,
-        Body: Buffer.from(arrayBuffer),
-        ContentType: "audio/mpeg",
+      const ts = new date().gettime();
+      const audiofilesavedat = `elevenlabsaudio/${videoname}/${ts}.mp3`;
+      const arraybuffer = await blob.arraybuffer();
+      const tigrisparam = {
+        bucket: process.env.next_public_bucket_name!,
+        key: audiofilesavedat,
+        body: buffer.from(arraybuffer),
+        contenttype: "audio/mpeg",
       };
 
-      // For testing locally
-      // collage.toFile(path.join(frameCollageDir, `collage-${batchIndex + 1}.jpg`));
+      // for testing locally
+      // collage.tofile(path.join(framecollagedir, `collage-${batchindex + 1}.jpg`));
 
       try {
-        await client.send(new PutObjectCommand(tigrisParam));
-        const url = `https://${process.env.NEXT_PUBLIC_BUCKET_NAME}.fly.storage.tigris.dev/${audioFileSavedAt}`;
-        await redis.set(narrationText, url);
-        console.log("Audio saved to Tigris: ", url);
+        await client.send(new putobjectcommand(tigrisparam));
+        const url = `https://${process.env.next_public_bucket_name}.fly.storage.tigris.dev/${audiofilesavedat}`;
+        await redis.set(narrationtext, url);
+        console.log("audio saved to tigris: ", url);
         return url;
       } catch (e) {
         console.error("Failed to save collage: ", e);

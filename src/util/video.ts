@@ -311,12 +311,39 @@ export async function toBase64ImageUrl(
   return toBase64;
 }
 
-const prompt = (context: string) => `TODO: implement`;
+const prompt = (context: string) => `These are frames from an old movie with one or more pictures.
+Generate a funny description of the image or a sequence of images. Make your narrative continuous and natural based on what you have said before. Really roast the movie.
+Previously you have described other frames from the same video, here is what you said: ${context}.
+Make your description unique and not repetitive please!. Also, please keep it to only a few sentences.`;
 
 export async function describeImageForVideo(
   url: string,
   context: string = "",
   modelName: string
 ) {
-  // TODO: Implement
+  const cachedResult = await redis.get(url);
+  if (cachedResult) {
+    return cachedResult;
+  }
+  const systemPrompt = {
+    role: "system",
+    content: `
+      You are a a professional comedian. One of the funniest people in the world. You're known for deeply intellectual comedy that's hilarious but also interesting.`,
+  };
+  console.log("Ollama Model: ", modelName);
+  const response = await ollama.chat({
+    model: modelName || "llava",
+    messages: [
+      systemPrompt,
+      {
+        role: "user",
+        content: prompt(context),
+        images: [await toBase64ImageUrl(url)],
+      },
+    ],
+  });
+  console.log("Ollama (Llava) Response: ", response.message);
+  await redis.set(url, response.message);
+  await redis.expire(url, 60 * 60);
+  return response.message;
 }

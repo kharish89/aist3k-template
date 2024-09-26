@@ -1,0 +1,32 @@
+# fly.toml app configuration file generated for harish-ollama-weathered-rain-9927 on 2024-09-23T13:39:45-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'harish-ollama-weathered-rain-9927'
+primary_region = 'ord'
+
+[build]
+  image = 'ollama/ollama:latest'
+
+[[mounts]]
+  source = 'ollama'
+  destination = '/root/.ollama'
+  initial_size = '10gb'
+
+[http_service]
+  internal_port = 11434
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/'
+
+[[vm]]
+  size = 'performance-8x'
+

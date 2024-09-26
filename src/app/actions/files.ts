@@ -6,6 +6,22 @@ import { TigrisObject } from '@/lib/tigris';
 const client = new S3Client();
 
 export default async function listFiles(): Promise<TigrisObject[]> {
-  // TODO: implement
-  return [];
+  const listObjectsV2Command = new ListObjectsV2Command(
+    { Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME });
+  const resp = await client.send(listObjectsV2Command);
+  if (resp.Contents === undefined) {
+    return [];
+  }
+  return resp.Contents
+    .filter(file => file.Key !== undefined)
+    .filter(file => file.Key && file.Key.endsWith(".mp4"))
+    .map(file => file.Key)
+    .map(
+      key => {
+        return {
+          displayName: key,
+          key,
+          urlSlug: key?.replace(".", "_")
+        } as TigrisObject;
+      });
 }
